@@ -139,7 +139,7 @@ struct Line {
 }
 
 // One-liner
-Line l: start(x:10 y:20), stop(x:30 y:40)
+Line l: start(x:10, y:20), stop(x:30, y:40)
 
 // Multi-liner
 Line l (
@@ -240,6 +240,9 @@ class Vehicle: implements[Movable] {
     construct(): int16
 }
 ```
+Notice that `implements` is a member of a collection type, which means that we
+can implement more than one interface.
+
 When we write out this example in full it becomes apparent that methods, while
 seemingly different, actually follow the same syntax as other objects (only
 repeating the class for brevity):
