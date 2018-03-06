@@ -308,5 +308,5 @@ Notice the `;` inside the scope, as we are defining a scope on a single line.
 
 We could define anonymous structs that inherit from anonymous structs:
 ```c++
-struct(struct{x, y: int32;}){z: int32} p: x:10, y:20, z:30
+struct(struct{x, y: int32;}){z: int32;} p: x:10, y:20, z:30
 ```
