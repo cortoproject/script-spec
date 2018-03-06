@@ -235,7 +235,7 @@ When object-specific assignments overlap value with the statement-wide
 assignment, the object-specific assignment takes precedence. That enables
 setting a default value, only when no specific value is set:
 
-```
+```c++
 int32 a(10), b(20), c, d: -1
 ```
 
@@ -292,6 +292,6 @@ case care must be taken to use a `;` to close the last statement in the scope,
 as the corto grammar mandates that each (non-scope) statement must end with a
 semicolon.
 
-```
+```c++
 enum Color {Red; Yellow; Green; Blue; Purple;}
 ```
