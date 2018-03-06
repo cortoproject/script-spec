@@ -382,20 +382,21 @@ This code snippet demonstrates how cortoscript can be used to describe an object
 hierarchy.
 
 ```c++
-Car my_car (
-    speed: 26mph,
+Drone my_drone (
     latitude: 37.7749,
-    longitude: 122.4194 )
+    longitude: 122.4194
+    altitude: 250ft)
 {
-    Engine my_engine (
-        temperature: 76F,
-        rpm: 4000 )
+    Battery drone_battery (
+        charge_level: 89%
+        temperature: 59F
+    )
 
-    Wheels {
-        Wheel FrontLeft (pressure: 31psi)
-        Wheel FrontRight (pressure: 32psi)
-        Wheel BackLeft (pressure: 30psi)
-        Wheel BackRight (pressure: 31psi)
+    Rotors {
+        Rotor FrontLeft (rpm: 8000)
+        Rotor FrontRight (rpm: 8000)
+        Rotor BackLeft (rpm: 8000)
+        Rotor BackRight (rpm: 8000)
     }
 }
 ```
