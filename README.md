@@ -53,7 +53,7 @@ The following section shows various examples of cortoscript.
 
 ### Simple model
 The following snippet shows how to define a simple struct type:
-```
+```c++
 struct Point {
     x: int32
     y: int32
@@ -66,7 +66,7 @@ objects are of type `member`, which is implicit here (`member` is the
 which is assigned to the first member of the `member` type, which is `type`.
 
 When this example is fully written out, it looks like this:
-```
+```c++
 struct Point {
     member x: type:int32
     member y: type:int32
@@ -76,8 +76,7 @@ struct Point {
 ### Model with inheritance
 The following snippet shows how to create a type that inherits from another
 type, in this case the `Point` type from the previous example:
-
-```
+```c++
 struct Point3D: Point {
     z: int32
 }
@@ -88,7 +87,7 @@ to the `Point3D` object. The `Point` object is assigned to the first member of
 objects is carefully chosen to mimic type definitions in other languages.
 
 When this example is written out in full, it looks like:
-```
+```c++
 struct Point3D: base:Point {
     member z: type:int32
 }
@@ -97,7 +96,7 @@ struct Point3D: base:Point {
 An alternative notation uses `()` instead of `:`. This notation is better suited
 for complex data structures that span multiple lines, but can be used here as
 well:
-```
+```c++
 struct Point3D (Point) {
     z (int32)
 }
@@ -112,8 +111,7 @@ lifecycle of the object (and usually occupy the same chunk of memory).
 Using the `Point` type from the previous example, there are various ways in
 which the type can be instantiated. The syntax allows for both simple one-liners
 as well as for more complex multi-line statements:
-
-```
+```c++
 // Simple one-line statement
 Point p: 10, 20
 
@@ -134,8 +132,7 @@ Point p: x(10), y(20)
 The following snippet shows a nested data type and subsequently how it can be
 instantiated. It also shows how multiple objects can be assigned the same value
 in a single statement.
-
-```
+```c++
 struct Line {
     // Assign 'Point' to both 'start' and 'stop' objects
     start, stop: Point
@@ -154,8 +151,7 @@ Line l (
 ### Collection types
 The following code snippet shows how to create a collection type, and various
 ways to instantiate it:
-
-```
+```c++
 list IntList: int32
 
 // Using same single-line syntax as used in previous examples
@@ -170,13 +166,13 @@ The following code snippet shows how to use anonymous collection types. Note how
 the syntax of an anonymous object is the same as a normal object, but with the
 identifier omitted:
 
-```
+```c++
 list(int32) my_list [10, 20, 30]
 ```
 
 When this example is written out in full, it would look like this:
 
-```
+```c++
 list(elementType: int32) my_list [10, 20, 30]
 ```
 Note that you cannot use the short-hand `:` notation for opening the value of
@@ -187,7 +183,7 @@ The corto type system allows for specifying modifiers on members that change the
 visibility and access (amongst others) of members. The following code snippet
 shows how they can be specified:
 
-```
+```c++
 struct Car {
     x: int32, readonly
     y: int32, readonly
@@ -196,7 +192,7 @@ struct Car {
 
 When this example is written out in full, it would look like this:
 
-```
+```c++
 struct Car {
     member x: type:float64, modifiers:readonly
     member y: type:float64, modifiers:readonly
@@ -208,7 +204,7 @@ be set using the normal object notation
 ### More member options
 The following snippet shows yet another example of how the object notation can
 be used to set more attributes of `member` instances:
-```
+```c++
 struct Car {
     speed: float64, unit:mph
     turbo: bool, default:"false"
@@ -221,7 +217,7 @@ its value.
 ### Mix combined assignments with object-specific assignments
 Cortoscript allows for assigning multiple objects the same value, while also
 allowing for object-specific assignments in the same statement:
-```
+```c++
 struct HQ {
     lat(default:"37.7749"), long(default:"122.4194"): float64
 }
@@ -234,7 +230,7 @@ The following example is slightly more complex and shows how to create an
 `interface` object with a method that is subsequently implemented by a `class`
 object that implements the interface, and adds a constructor.
 
-```
+```c++
 interface Movable {
     move(float64 x, float64 y)
 }
@@ -248,7 +244,7 @@ When we write out this example in full it becomes apparent that methods, while
 seemingly different, actually follow the same syntax as other objects (only
 repeating the class for brevity):
 
-```
+```c++
 class Vehicle: implements[Movable] {
     method move(float64 x, float64 y)
     method construct(): returnType:int16
@@ -263,7 +259,7 @@ The following code snippet shows how to override a method. Overriding a method
 is done by creating an `override` object. You can only override methods that
 have been created as `overridable` objects.
 
-```
+```c++
 class Vehicle {
     overridable move(float64 x, float64 y)
 }
