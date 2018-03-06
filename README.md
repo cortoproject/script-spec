@@ -48,6 +48,72 @@ the case with for example JSON. That also means that cortoscript cannot be
 parsed without an accompanying type definitions, which can be either provided
 in the same file, or come from another file or corto package.
 
+## Differences between cortoscript and JSON
+In some scenarios, both cortoscript and JSON can be used, like for example when
+creating configuration files or model files. In many situations, cortoscript
+will provide a more concise, easier to read alternative to using JSON as it can
+leverage the full semantics of the corto type system.
+
+The ubiquity of JSON, in combination with its self-describing nature however
+means there are also plenty of scenarios where JSON is a better choice. As a
+general guideline, cortoscript is preferred when the file is exclusively used
+within a corto context. An example is the file that defines the datamodel for a
+project.
+
+When the data needs to be shared across projects outside of the corto ecosystem,
+JSON is a better choice. Also, needless to say, for any communication with web
+applications JSON is clearly the better option.
+
+The following two examples show an example model definition and configuration
+in both cortoscript and JSON, for illustration:
+
+### Model file
+In cortoscript:
+```c++
+struct Point {
+    x, y: int32
+}
+```
+
+In JSON:
+```json
+{
+    "id": "Point",
+    "type": "struct",
+    "scope": [
+        {"id": "x", "value": {"type": "int32"}},
+        {"id": "y", "value": {"type": "int32"}}
+    ]
+}
+```
+
+### Configuration file
+In cortoscript:
+```c++
+driver/mnt/filestore config/fs (
+    storedir: "/tmp/data",
+    query (
+        select: "*",
+        from: "data"
+    )
+)
+```
+
+In JSON:
+```
+{
+    "id": "config/fs",
+    "type": "driver/mnt/filestore",
+    "value": {
+        "storedir": "/tmp/data",
+        "query": {
+            "select": "*",
+            "from": "data"
+        }
+    }
+}
+```
+
 ## Code examples
 The following section shows various examples of cortoscript.
 
