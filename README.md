@@ -290,7 +290,7 @@ class Car {
 Scopes can be opened and closed on the same line as the declaration. In this
 case care must be taken to use a `;` to close the last statement in the scope,
 as the corto grammar mandates that each (non-scope) statement must end with a
-semicolon.
+semicolon or newline.
 
 ```c++
 enum Color {Red; Yellow; Green; Blue; Purple;}
