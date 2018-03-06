@@ -239,7 +239,7 @@ setting a default value, only when no specific value is set:
 int32 a(10), b(20), c, d: -1
 ```
 
-### Create a class that implements an interface, a method and a constructor
+### Create a class that implements an interface, adds a method and a constructor
 The following example is slightly more complex and shows how to create an
 `interface` object with a method that is subsequently implemented by a `class`
 object that implements the interface, and adds a constructor.
@@ -258,7 +258,7 @@ Notice that `implements` is a member of a collection type, which means that we
 can implement more than one interface.
 
 When we write out this example in full it becomes apparent that methods, while
-seemingly different, actually follow the same syntax as other objects (only
+seeming different, actually follow the same syntax as other objects (only
 repeating the class for brevity):
 
 ```c++
@@ -294,4 +294,19 @@ semicolon.
 
 ```c++
 enum Color {Red; Yellow; Green; Blue; Purple;}
+```
+
+### Anonymous struct types
+The following code snippet shows how to use anonymous struct types. Just like
+with anonymous collections, the name is omitted, however because struct members
+are defined in the struct scope instead of the value, we open a scope:
+
+```c++
+struct{x, y: int32;} p: 10, 20
+```
+Notice the `;` inside the scope, as we are defining a scope on a single line.
+
+We could define anonymous structs that inherit from anonymous structs:
+```c++
+struct(struct{x, y: int32;}){z: int32} p: x:10, y:20, z:30
 ```
