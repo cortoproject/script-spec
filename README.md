@@ -219,11 +219,25 @@ Cortoscript allows for assigning multiple objects the same value, while also
 allowing for object-specific assignments in the same statement:
 ```c++
 struct HQ {
-    lat(default:"37.7749"), long(default:"122.4194"): float64
+    latitude(default:"37.7749"), longitude(default:"122.4194"): float64
 }
 ```
-Note that the `tags` member is a collection, and therefore can use `[]` to set
-its value.
+
+This capability also comes in handy when manually setting constant values of an
+enumeration:
+```c++
+enum Color {
+    Red(0xFF000), Green(0x00FF00), Blue(0x0000FF)
+}
+```
+
+When object-specific assignments overlap value with the statement-wide
+assignment, the object-specific assignment takes precedence. That enables
+setting a default value, only when no specific value is set:
+
+```
+int32 a(10), b(20), c, d: -1
+```
 
 ### Create a class that implements an interface, a method and a constructor
 The following example is slightly more complex and shows how to create an
@@ -270,4 +284,14 @@ class Vehicle {
 class Car {
     override move(float64 x, float64 y)
 }
+```
+
+### Single-line definitions with a scope
+Scopes can be opened and closed on the same line as the declaration. In this
+case care must be taken to use a `;` to close the last statement in the scope,
+as the corto grammar mandates that each (non-scope) statement must end with a
+semicolon.
+
+```
+enum Color {Red; Yellow; Green; Blue; Purple;}
 ```
