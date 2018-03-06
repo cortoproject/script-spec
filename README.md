@@ -418,7 +418,7 @@ Drone my_drone (
         charge_level: 89%,
         temperature: 59F)
 
-    // Rotors is a child of my_drone
+    // Rotor is a child of my_drone
     Rotor {
         // The Rotor instances are childs of Rotor
         Rotor FrontLeft (rpm: 8000)
