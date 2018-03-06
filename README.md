@@ -382,16 +382,20 @@ This code snippet demonstrates how cortoscript can be used to describe an object
 hierarchy.
 
 ```c++
+// my_drone is the top-level object
 Drone my_drone (
     latitude: 37.7749,
     longitude: 122.4194,
     altitude: 250ft)
 {
+    // drone_battery is a child of my_drone
     Battery drone_battery (
         charge_level: 89%,
         temperature: 59F)
 
+    // Rotors is a child of my_drone
     Rotors {
+        // The Rotor instances are childs of Rotor
         Rotor FrontLeft (rpm: 8000)
         Rotor FrontRight (rpm: 8000)
         Rotor BackLeft (rpm: 8000)
