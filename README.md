@@ -100,7 +100,7 @@ driver/mnt/filestore config/fs (
 ```
 
 In JSON:
-```
+```json
 {
     "id": "config/fs",
     "type": "driver/mnt/filestore",
