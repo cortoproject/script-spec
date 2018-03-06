@@ -384,13 +384,12 @@ hierarchy.
 ```c++
 Drone my_drone (
     latitude: 37.7749,
-    longitude: 122.4194
+    longitude: 122.4194,
     altitude: 250ft)
 {
     Battery drone_battery (
-        charge_level: 89%
-        temperature: 59F
-    )
+        charge_level: 89%,
+        temperature: 59F)
 
     Rotors {
         Rotor FrontLeft (rpm: 8000)
