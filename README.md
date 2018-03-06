@@ -376,3 +376,26 @@ We could define anonymous structs that inherit from anonymous structs:
 ```c++
 struct(struct{x, y: int32;}){z: int32;} p: x:10, y:20, z:30
 ```
+
+### Child objects
+This code snippet demonstrates how cortoscript can be used to describe an object
+hierarchy.
+
+```c++
+Car my_car (
+    speed: 26mph,
+    latitude: 37.7749,
+    longitude: 122.4194 )
+{
+    Engine my_engine (
+        temperature: 76F,
+        rpm: 4000 )
+
+    Wheels {
+        Wheel FrontLeft (pressure: 31psi)
+        Wheel FrontRight (pressure: 32psi)
+        Wheel BackLeft (pressure: 30psi)
+        Wheel BackRight (pressure: 31psi)
+    }
+}
+```
