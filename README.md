@@ -377,7 +377,32 @@ We could define anonymous structs that inherit from anonymous structs:
 struct(struct{x, y: int32;}){z: int32;} p: x:10, y:20, z:30
 ```
 
-### Child objects
+### Hierarchical model
+This code snippet demonstrates how cortoscript can be used to describe a
+hierarchical datamodel.
+
+```c++
+// Drone is a top-level object
+container Drone {
+    // Tags enable 3rd party plugins to interpret this data
+    latitude: float64, tags[latitude]
+    longitude: float64, tags[longitude]
+    altitude: float64, unit:feet, tags[altitude]
+
+    // Each drone has exactly one battery
+    leaf Battery {
+        charge_level: uint8, unit:percentage
+        temperature: float64, unit:temperature
+    }
+
+    // Each drone may have any number of rotors
+    table Rotor {
+        rpm: uint16
+    }
+}
+```
+
+### Hierarchical objects
 This code snippet demonstrates how cortoscript can be used to describe an object
 hierarchy.
 
@@ -389,12 +414,12 @@ Drone my_drone (
     altitude: 250ft)
 {
     // drone_battery is a child of my_drone
-    Battery drone_battery (
+    Battery battery (
         charge_level: 89%,
         temperature: 59F)
 
     // Rotors is a child of my_drone
-    Rotors {
+    Rotor {
         // The Rotor instances are childs of Rotor
         Rotor FrontLeft (rpm: 8000)
         Rotor FrontRight (rpm: 8000)
