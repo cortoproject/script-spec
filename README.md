@@ -22,6 +22,9 @@ cortoscript, and parse and evaluate the filter at runtime. In this scenario, a
 cortoscript is parsed to a backend that can dynamically execute code, like the
 corto virtual machine (https://github.com/cortoproject/vm).
 
+This repository contains a cortoscript parser with a formal definition of the
+grammar: https://github.com/cortoproject/script-parser
+
 ## Design principles
 Cortoscript uses the corto API underneath to instantiate objects. Therefore the
 same rules apply that apply to declaring/defining objects in the object store,
