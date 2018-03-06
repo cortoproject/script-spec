@@ -395,7 +395,7 @@ Drone my_drone (
 
     // Rotors is a child of my_drone
     Rotors {
-        // The Rotor instances are childs of Rotor
+        // The Rotor instances are children of Rotors
         Rotor FrontLeft (rpm: 8000)
         Rotor FrontRight (rpm: 8000)
         Rotor BackLeft (rpm: 8000)
