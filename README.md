@@ -200,9 +200,8 @@ When a declaration omits a type, the type is determined according to rules of
 the type system (the behavior is equivalent to doing a `corto_create` where
 `NULL` is provided for the type parameter).
 
-In practice, the type system will be derived the default type from the type of
-the parent object, which can specify a default type for its children. Take the
-following example:
+The most common application for this is where a parent object specifies  a
+default type for its children. Take the following example:
 
 ```c++
 ParentType Foo {
@@ -213,6 +212,9 @@ ParentType Foo {
 
 If in this example `ParentType` would have set its `defaultType` to `ChildType`,
 the type of `Child1` and `Child2` will default to `ChildType`.
+
+Note that the exact semantics on what the default type is for a particular
+scenario is not defined by cortoscript, but by the underlying typesystem.
 
 ### Defining hierarchies
 One of the key features of cortoscript is that it has native support for
@@ -253,8 +255,13 @@ known. This is illustrated in the following example:
 Point p/q (10, 20)
 
 // P is recreated as a Point, while preserving q in its scope
-Point p(30, 40)
+Point p (30, 40)
 ```
+
+Cortoscript does not mandate how `unknown` objects are stored by the underlying
+store. What is important however is the notion of order. `p/q` is defined before
+`p`, which means that the corresponding lifecycle hooks and events must take
+place in that sequence.
 
 ### Defining types
 A unique property of cortoscript is that it does not have a separate DSL for
@@ -268,14 +275,18 @@ struct Point {
 }
 ```
 
-This example describes a struct type with the name `Point`, and two members called `x` and `y`, both of which have `int32` as their member type.
+This example describes a struct type with the name `Point`, and two members
+called `x` and `y`, both of which have `int32` as their member type.
 
-What should be evident, is that this example uses the same syntax as the one
-that has been discussed thus far. When it is deconstructed, we get:
+What is noteworthy here is that this example can be interpreted using the same
+syntax as the ones that have been outlined in the previous sections. According
+to those rules, this example describes:
+
 - An object with type `struct` and identifier `Point`
 - Two child objects with identifier `x` and `y`, value `int32` and implicit type
 
-When this example is written out in full, it looks like this:
+To make it more obvious what is happening, this is what it looks like when the
+example is written out in full:
 
 ```c++
 struct Point {
@@ -284,19 +295,26 @@ struct Point {
 }
 ```
 
-The `defaultType` of `struct` is `member`, thus `x` and `y` are created as
-instances of `member`. The `member` type has a member called `type`, which for
-both `x` and `y` is assigned to `int32`.
+From this we can make a few observations. The implicit type of `x` and `y` was
+replaced with the `member` type, in this case because the typesystem mandates
+that the default type for children of a `struct` object is `member`.
+
+Additionally, we can see that a `member` is an type that has a `type` field.
+Because `type` is the first field in the `member` type, it can be assigned
+without explicitly specifying the `type` field name.
 
 Describing types in this manner is possible because the type system is
-self-describing. In other words, it uses its own datatypes to describe its own
-structure.
+self-describing. In the example, `struct` and `member` are not keywords of the
+language, but instead they are types themselves in the type system. The
+structure of those types is self-describing, meaning that at some level, a
+`struct` describes itself as something that has a collection of `member`
+instances.
 
 More examples of how types are described can be found in the Code examples
 section.
 
 ### Primitive values
-Cortoscript supports a wide range of primitive values and corresponding
+Cortoscript supports a range of primitive values and corresponding
 notations. Here is a summary:
 
 | Kind | Example |
@@ -307,6 +325,20 @@ notations. Here is a summary:
 | floating point | 10.5, 105e-1 |
 | hexadecimal | 0xFF0000 |
 | string | "Hello World", null |
+
+Cortoscript does not mandate things like the size of an integer or the maximum
+length of a string. These are determined by the underlying storage and type
+system. Take the following example:
+
+```
+int32 my_int: 15
+```
+
+Here, an object called `my_int` is defined with type `int32`, and its value is
+set to `15`. The semantics that determine that `my_int` is a 32 bit integer are
+derived from the underlying storage the implementation of the `int32` type. To
+cortoscript, these details are opaque.
+
 
 ### References
 Cortoscript supports objects that refer to other objects. Consider the following
@@ -358,7 +390,182 @@ accepts references of any type, whereas an instance of a `class` type only
 accepts instances of that class. This is more exhaustively described in type
 system documentation.
 
-## Differences between cortoscript and JSON
+### Identifier resolution
+When referring to other objects in cortoscript, there are certain rules that
+govern how those objects are resolved from the underlying store. Understanding
+these rules will help preventing what could otherwise be confusing issues.
+
+Identifier resolution is primarily the responsibility of the underlying store.
+Cortoscript will use what is provided by the underlying store, but does require
+that the mechanism offered meets a number of requirements. These will ensure
+that scripts written in cortoscript work predictably across implementations.
+
+#### Case insensitive
+Firstly, cortoscript is case insensitive. The first reason for this decision is
+because it makes it easier to use as an extension of OMG-IDL, which is widely
+adopted in the industrial space.
+
+The second reason is that some file systems are case insensitive. As
+cortoscript will often be used as a front-end for code generation, type names
+which only differ in case would could cause generated files with names based on
+the typename to overwrite.
+
+A third reason is that different contexts may require different case
+conventions. A good example is the `modifiers` field of a `member`. This field
+is a bitmask that represents different options for member objects, like
+`readonly`, `optional` etc. In C code, bitmasks are represented as upper-case
+identifiers (`READONLY`), whereas in cortoscript it is more natural to use the
+the lowercase variant (`readonly`).
+
+Lastly, it is good practice to not create objects with the same name that only
+differ in case.
+
+#### Identifier scoping
+When referring to other objects in cortoscript it is not always necessary to
+use the full identifier of the object. Identifiers are relative to the scope in
+which they are used. To illustrate this, take a look at this code, which
+uses the `Person` class from the previous example:
+
+```c++
+void my_family {
+    Person mother
+    Person father: spouse:mother
+    Person mother: spouse:father
+}
+```
+
+Note how the references to `mother` and `father` are relative to the `my_family`
+scope. The full identifiers would have been `/my_family/mother` and
+`/my_family/father`.
+
+When a reference is not found in the current scope, the parent scope will be
+searched recursively, until the root of the store has been reached. Take the
+following example:
+
+```c++
+void my_family {
+    Person grandmother()
+    void my_household {
+        Person father: mother:grandmother
+    }
+}
+```
+
+In this scenario, the `grandmother` object can be referred to by its relative
+identifier, because the object is located in the `my_family` scope, which is the
+parent object of the `my_household` scope.
+
+Note that relative identifiers can only be used from within the scope where they
+are used. Take the following example:
+
+```c++
+void my_family {
+    Person grandmother()
+    void my_household()
+}
+Person my_family/my_household/father: mother:my_family/grandmother
+```
+
+Here, we need to use the identifier relative to the root for `grandmother`, as
+the reference is specified outside of the `my_family` scope, even though the
+`mother` object is inside the scope.
+
+For objects belonging to the type system, cortoscript mandates that they can be
+accessed from anywhere using just the identifier relative to their scope.
+
+To illustrate, in corto the type system is located in the `/corto/lang` scope.
+That means that all meta-types, like `struct`, `class` and so forth, are stored
+in this scope. It would however be inconvenient if you would have to write:
+
+```
+corto/lang/struct Point {
+    corto/lang/member x, y: corto/lang/int32
+}
+```
+
+To ensure convenience, type system objects must therefore always be directly
+accessible without specifying a scope. In addition, to ensure that a user
+cannot accidentally redefine objects from the type system, the type system
+scope should be searched first. Take the following example:
+
+```
+struct Struct {
+    m: int32
+}
+
+struct Point {
+    x, y: int32
+}
+```
+
+Though a contrived scenario, it demonstrates a potential ambiguity, where the
+definition of `Point` could use either `/Struct` or `/corto/lang/struct`. Since
+the type system scope (`/corto/lang`) is always the first place for a lookup,
+this ambiguity cannot occur.
+
+If an application wants to resolve its own definition of a type system object,
+it will have to use the full path, which in our example would be `/Struct`.
+
+In addition to the type system path, Corto also adds the `corto` scope to the
+default search path. To ensure this does not interfere with resolving regular
+identifiers, the corto scope will only be searched when none of the other scopes
+yielded a result.
+
+#### Resolving constants
+A common kind of type in typesystems is an enumeration, or a bitmask. In a
+hierarchical store, a natural way to describe an enumeration is to store the
+constants of an enumeration in the scope of the enumeration type. This is
+exactly what the corto type system does, and allows for specifying enumerations
+like this:
+
+```cpp
+enum Color {
+    Red
+    Green
+    Blue
+}
+```
+
+The `Red`, `Green`, and `Blue` objects are instances of the `constant` type,
+which is a 32-bit integer. When assigning an enumeration value, you could
+use the constant objects in the initializer, like this:
+
+```cpp
+Color my_color: Color/Red
+```
+
+Having to specify the enumeration name when referring to a constant however is
+not very convenient, especially since it is evident that `Red` should be part of
+`Color`. To make these scenarios more convenient, cortoscript allows for types
+to specify a custom search scope for their values. This scope is searched
+_before_ `/corto/lang`.
+
+An enumeration could specify itself as the search scope, so that the above
+declaration can be rewritten as:
+
+```cpp
+Color my_color: Red
+```
+
+The exact semantics of the search scope are defined by the type system.
+
+#### Identifier resolution order
+This provides a summary of the order in which corto searches in various scopes
+for an identifier:
+
+```
+type scope -> /corto/lang -> current + parent scopes -> /corto
+```
+
+The `type scope` is only applicable when assigning a value. If an
+identifier is found in a scope, the subsequent scopes are not searched. Scopes
+will never be searched twice, thus if the current scope is `/corto/lang`, it
+will not be searched again after `/corto/lang` was already searched. Similarly,
+if the current scope is a child of `/corto`, `/corto` will not be searched
+again after the current- and parent scopes have been searched. Fully qualified
+identifier will always be immediately looked up from the root
+
+## Cortoscript and JSON
 In some scenarios, both cortoscript and JSON can be used, like for example when
 creating configuration files or model files. In many situations, cortoscript
 will provide a more concise, easier to read alternative to using JSON as it can
@@ -424,10 +631,29 @@ In JSON:
 }
 ```
 
-## Differences between cortoscript and OMG IDL
+## Cortoscript and OMG IDL
 OMG IDL is a description language for describing structured data, and is widely
-used in CORBA (Common Object Request Broker Architecture) and DDS (Data Distribution Service) based systems. IDL is superficially similar to cortoscript
+used in CORBA (Common Object Request Broker Architecture) and DDS (Data
+Distribution Service) based systems. IDL is superficially similar to cortoscript
 in that it offers a language-independent way of describing types.
+
+This simple example demonstrates some similarities between cortoscript and IDL:
+
+IDL:
+```
+struct Point {
+    long x;
+    long y;
+}
+```
+
+cortoscript:
+```
+struct Point {
+    x: int32
+    y: int32
+}
+```
 
 IDL and cortoscript have different design goals. IDL is designed as a language
 to describe syntax of a connectivity framework, whereas cortoscript is designed
