@@ -30,27 +30,37 @@ This repository contains a cortoscript parser with a formal definition of the
 grammar: https://github.com/cortoproject/script-parser
 
 ## Design principles
-Cortoscript uses the corto API underneath to instantiate objects. Therefore the
-same rules apply that apply to declaring/defining objects in the object store
-also apply to cortoscript. Every statement in cortoscript has an equivalent API
-function (or set of API functions) associated with it.
+Cortoscript assumes the same CRUD model as corto. Every statement in cortoscript
+has an equivalent API function (or set of API functions) associated with it. In
+addition to regular CRUD (Create, Read, Update, Delete) operations, corto has an
+extra Declare operation to allow for declaratively creating data with cycles.
 
-Cortoscript assumes that the underlying type system is self-describing, and thus
-does not define a separate DSL for defining types. Types in cortoscript use the
-same syntax that is used to instantiate object. This decouples cortoscript from
-the type system, and allows cortoscript to evolve independently from the corto
-runtime.
+Cortoscript is strongly typed, yet does not have a DSL for defining types. Types
+should be defined like ordinary objects, which requires that the underlying
+type system is self-describing.
 
-Cortoscript aims to look and feel familiar. Even though the language does not
-have a separate DSL for defining types, the syntax has been chosen in such a way
-that when a type is written down using the normal object notation, it still
-resembles type definitions from other popular languages, like C++ or Java.
+Cortoscript is designed as a language that can be used independently from the
+corto runtime. The language does not contain anything that is specific to the
+corto typesystem.
 
-Cortoscript leverages type information to keep syntax concise. It does not, for
-example, mandate that field names are provided when initializing objects, as is
-the case with for example JSON. That also means that cortoscript cannot be
-parsed without an accompanying type definitions. Those can be either provided
-in the same file, or come from another file or corto package.
+Cortoscript aims to be concise and easy to read. While it is possible to
+describe corto data in other formats (JSON, XML), the result is often verbose.
+Cortoscript in practice is easier to write and easier to read.
+
+Cortoscript is designed to be easy to parse. The number of syntax constructs in
+cortoscript is in the same order of magnitude as JSON and XML, which makes it a
+language that can be parsed with relatively small effort.
+
+Cortoscript aims to be DRY (don't repeat yourself) by introducing syntax
+constructs that allow code to avoid repetition. This is one of the primary
+reasons why it is less verbose than JSON, and in particular XML.
+
+Cortoscript has been designed with an adaptable syntax so that it can be used in
+a wide range of scenarios while still achieving a look and feel that otherwise
+could only be achieved by a DSL. This is realized in part realized because
+cortoscript has a minimal list of keywords, and most of its notation relies on
+the underlying (extendable) typesystem.
+
 
 ## Language overview
 This section does not aim to provide an exhaustive overview of the language, as
@@ -263,10 +273,57 @@ store. What is important however is the notion of order. `p/q` is defined before
 `p`, which means that the corresponding lifecycle hooks and events must take
 place in that sequence.
 
+#### Default scope types
+In some scenarios, an application will want to create a number of objects that
+are all of the same type. In such a case, it would not be very DRY to have to
+specify the type multiple times. Cortoscript supports using an implicit type
+when the type of the parent object specifies a type, however in some cases the
+parent type might not specify a type, or specify the wrong type.
+
+To accommodate for these scenarios without having to introduce a new type that
+specifies the desired default type, cortoscript has a syntax that enables
+setting the default type for a scope:
+
+```c++
+void parent {|Point|
+    p: 10, 20
+    q: 10, 20
+}
+```
+
+In this example, both `p` and `q` will be created as instances of `Point`. Note
+that `|Point|` is only a syntax construct, and provides a hint to the
+interpreter. After a script is parsed, this information is no longer stored
+anywhere. It is therefore possible to open the same scope multiple times with
+different default types:
+
+```c++
+void parent {|Point|
+    p: 10, 20
+    q: 10, 20
+}
+
+void parent {|Line|
+    l: (10, 20), (30, 40)
+    m: (50, 60), (70, 80)
+}
+```
+
+Declarations may still provide an explicit type, in which case the explicit
+type is used:
+
+```c++
+void parent {|Point|
+    p: 10, 20
+    q: 10, 20
+    Line l: (10, 20), (30, 40)
+}
+```
+
 ### Defining types
 A unique property of cortoscript is that it does not have a separate DSL for
-specifying types, as mentioned in the design goals. To get an idea for what
-this means in practice, consider the following type description:
+specifying types. To get an idea for what this means in practice, consider the
+following type description:
 
 ```c++
 struct Point {
