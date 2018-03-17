@@ -75,7 +75,7 @@ whereas an imperative language the "things that should be done". Here is a
 simple C example that demonstrates the differences between declarative and
 imperative styles:
 
-Imperative:
+Imperative (C):
 
 ```c
 Point p;
@@ -83,7 +83,7 @@ p.x = 10;
 p.y = 20;
 ```
 
-Declarative:
+Declarative (C):
 
 ```c
 Point p = {.x = 10, .y = 20};
@@ -94,13 +94,16 @@ In cortoscript, a declaration takes one of the following forms (simplified):
 ```c++
 type identifier: value
 type identifier (value)
+type identifier [value]
 type (value)
 ```
 
 The notation that uses `:` is referred to as the "shorthand" notation, and
 allows object values to be specified on a single line. The notation that uses
 `()` is called the "composite notation", and is better suited for complex
-declarations that span multiple lines.
+declarations that span multiple lines. The `[]` syntax is called the
+"collection notation" and is similar to the composite notation, except that it
+is used for describing collection values.
 
 Here is an example of a real cortoscript declaration using shorthand notation:
 
@@ -143,9 +146,7 @@ Line l (
 )
 ```
 
-In addition to the composite notation, there is also a "collection" notation
-which, like the name suggests, allows for specifying collection values. The collection notation uses uses `[]` instead of `()` to encapsulate a value. The
-following example demonstrates an object that contains a collection value:
+The following example demonstrates an object that contains a collection value:
 
 ```c++
 list(int32) Integers [10, 20, 30]
