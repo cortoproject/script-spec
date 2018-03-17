@@ -68,7 +68,6 @@ the language grammar is a more appropriate and concise way to do that. Here we
 describe the high-level design of the language, so that a reader will be able
 to read and write definitions in cortoscript.
 
-### Declarations
 Cortoscript is a declarative language, which means that scripts use declarations
 to instantiate data. Declarative languages declare the "things that should be",
 whereas an imperative language the "things that should be done". Here is a
@@ -89,6 +88,40 @@ Declarative (C):
 Point p = {.x = 10, .y = 20};
 ```
 
+### Whitespaces and line endings
+Whitespaces in cortoscript are mostly ignored, except for the newline character
+which can be used to separate statements. In addition to the newline character
+a script can also use the semicolon (`;`) to separate statements.
+
+Inside parentheses (`()`) and brackets (`[]`) newlines are ignored which makes
+it possible to split up complex statements over multiple lines.
+
+There are certain cases where whitespaces between tokens matter, which is a side
+effect of the order in which the lexer rules are specified. For example:
+
+```
+foo/bar
+```
+
+is interpreted as the identifier `foo/bar` whereas
+
+```
+foo / bar
+```
+
+is interpreted as `foo` divided by `bar`. This intentional enforcing of using
+whitespaces to disambiguate one rule from another allows for more intuitive
+interpretation of a script. Cortoscript deliberately avoids confusion in
+scenarios like the following C++ snippet:
+
+```
+Foo ::Bar
+```
+
+Here, intuitively it looks like a declaration of type `Foo` and identifier `Bar`
+whereas actually this will be parsed as identifier `Foo::Bar`.
+
+### Declarations
 In cortoscript, a declaration takes one of the following forms (simplified):
 
 ```c++
