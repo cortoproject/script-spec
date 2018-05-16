@@ -6,61 +6,25 @@ models and data that instantiates models. Typical usecases for cortoscript are:
 - configuration data
 - expression parsing
 
-The purpose of cortoscript is to provide a concise and readable method for
-natively describing corto objects and models. Parsers that do the same exist
-for notation languages like JSON and XML, however definitions in these formats
-are comparatively verbose and hard to read.
+The purpose of cortoscript is to provide a concise and readable format for describing corto objects and models.
 
-There are several scenarios where cortoscript can add value. Firstly, many
-corto projects define their own datamodel and API specification. Cortoscript
-natively understands the corto typesystem, which means it is the most concise
-method of describing model files.
-
-A second scenarios is when cortoscript is used to specify configuration data. In
-this case, objects are described in a script that when instantiated run some
-logic in their constructors that activates a particular component. A typical
-usecase for this is to instantiate mounts or other infrastructure objects.
-
-Thirdly, cortoscript can be used to parse expressions, which can then be ran by
-applications dynamically. A typical usecase for this is to write a filter in
-cortoscript, and parse and evaluate the filter at runtime. In this scenario,
-cortoscript is combined with a backend that can dynamically execute code, like the corto virtual machine (https://github.com/cortoproject/vm).
-
-This repository contains a cortoscript parser with a formal definition of the
-grammar: https://github.com/cortoproject/script-parser
+This repository contains a cortoscript parser with a formal definition of the grammar: https://github.com/cortoproject/script-parser
 
 ## Design principles
-Cortoscript assumes the same CRUD model as corto. Every statement in cortoscript
-has an equivalent API function (or set of API functions) associated with it. In
-addition to regular CRUD (Create, Read, Update, Delete) operations, corto has an
-extra Declare operation to allow for declaratively creating data with cycles.
+Cortoscript must be declarative. It must provide syntax to instantiate any kind of data that is allowed by the underlying type system without having to rely in imperative statements, including creating cyclic graphs.
 
-Cortoscript is strongly typed, yet does not have a DSL for defining types. Types
-should be defined like ordinary objects, which requires that the underlying
-type system is self-describing.
+Cortoscript must be usable independently from corto. The language must not contain anything that is specific to the corto typesystem or runtime.
 
-Cortoscript is designed as a language that can be used independently from the
-corto runtime. The language does not contain anything that is specific to the
-corto typesystem.
+Cortoscript must be strongly typed, yet must not have a DSL for defining types. Types must be defined like ordinary objects, which requires that the underlying type system is self-describing.
 
-Cortoscript aims to be concise and easy to read. While it is possible to
-describe corto data in other formats (JSON, XML), the result is often verbose.
-Cortoscript in practice is easier to write and easier to read.
+Cortoscript must be concise and easy to read. It must take advantage of the underlying typesystem to provide a syntax which is less verbose and contains less clutter than alternatives.
 
-Cortoscript is designed to be easy to parse. The number of syntax constructs in
-cortoscript is in the same order of magnitude as JSON and XML, which makes it a
-language that can be parsed with relatively small effort.
+Cortoscript must be DRY (don't repeat yourself) by introducing syntax
+constructs that allow scripts to avoid repetition.
 
-Cortoscript aims to be DRY (don't repeat yourself) by introducing syntax
-constructs that allow code to avoid repetition. This is one of the primary
-reasons why it is less verbose than JSON, and in particular XML.
+Cortoscript should be easy to parse. The number of syntax constructs in cortoscript should be in the same order of magnitude as JSON and XML, which should make it a language that can be parsed within reasonable time.
 
-Cortoscript has been designed with an adaptable syntax so that it can be used in
-a wide range of scenarios while still achieving a look and feel that otherwise
-could only be achieved by a DSL. This is realized in part realized because
-cortoscript has a minimal list of keywords, and most of its notation relies on
-the underlying (extendable) typesystem.
-
+Cortoscript should support internet of things usecases by supporting notation for hierarchical data, as well as support for units, ranges and data semantics.
 
 ## Language overview
 This section does not aim to provide an exhaustive overview of the language, as
@@ -87,6 +51,8 @@ Declarative (C):
 ```c
 Point p = {.x = 10, .y = 20};
 ```
+
+The following sections provide an overview of the different parts of the language.
 
 ### Whitespaces and line endings
 Whitespaces in cortoscript are mostly ignored, except for the newline character
@@ -163,8 +129,8 @@ assigning complex values:
 
 ```c++
 Line l (
-    start(x:10, y:20),
-    stop(x:30, y:40)
+    start: (x:10, y:20),
+    stop: (x:30, y:40)
 )
 ```
 
@@ -196,10 +162,31 @@ Here is an example declaration where the three styles are combined:
 
 ```c++
 list(Line) lines [
-    (start(x:10, y:20), stop(x:30, y:40)),
-    (start(x:50, y:60), stop(x:70, y:80))
+    (start: (x:10, y:20), stop: (x:30, y:40)),
+    (start: (x:50, y:60), stop: (x:70, y:80))
 ]
 ```
+
+#### Collection literals
+Collection values can be created in cortoscript as shown earlier, like this:
+
+```c++
+list(int32) Integers [10, 20, 30]
+```
+
+This creates a new `Integers` object which is a list of integers. By leaving out the object identifier, we can create an anonymous list object:
+
+```c++
+list(int32)[10, 20, 30]
+```
+
+Cortoscript provides a shorthand notation for creating anonymous lists:
+
+```c++
+[|int32| 10, 20, 30]
+```
+
+This notation guarantees to return a linked list of `int32` elements.
 
 #### Forward decalations
 Cortoscript allows for forward declarations of objects. This allows for
@@ -344,7 +331,7 @@ void parent {|Line|
 ```
 
 Declarations may still provide an explicit type, in which case the explicit
-type is used:
+type takes precedence:
 
 ```c++
 void parent {|Point|
@@ -475,11 +462,43 @@ my_father <-> my_mother
           me
 ```
 
-There are various rules in the type system that determine whether an object can
-be assigned to a reference of a specific type. The aforementioned `object` type
-accepts references of any type, whereas an instance of a `class` type only
-accepts instances of that class. This is more exhaustively described in type
-system documentation.
+There are various rules in the type system that determine whether an object can be assigned to a reference of a specific type. The aforementioned `object` type accepts references of any type, whereas an instance of a `class` type only accepts instances of that class. This is more exhaustively described in type system documentation.
+
+#### By-value or by-reference operators
+By default, corto objects are referred to by either reference or value depending on whether they are of a refernce type or value type. In some cases, a user may want to refer to an object of a reference type by value, or vice versa, refer to an object of a value type by reference. For those scenarios, reference operators allow the user to indicate how objects should be accessed.
+
+The following example illustrates how comparing two objects of a value type will automatically do a compare-by-value:
+
+```c++
+int32 a: 10
+int32 b: 10
+
+a == b // 'true', because a and b have the same value
+```
+
+If a user wants to compare by reference, the unary reference operator (`&`) can be used to accomplish this:
+
+```c++
+int32 a: 10
+int32 b: 10
+
+&a == &b // 'false', because a and b are different objects
+```
+
+Similarly, a user may want to compare two objects of a reference type by value. For this, the unary value operator (`*`) can be used:
+
+```
+class Point {
+    x, y: int32
+}
+
+Point p, q (10, 20)
+
+p == q // 'false', because p is not the same object as q
+*p == *q // 'true', because the value of p is equal to q
+```
+
+Using the value operator on an object of a value type, or the reference operator on the object of a reference type is valid, but has no effect.
 
 ### Identifier resolution
 When referring to other objects in cortoscript, there are certain rules that
@@ -494,7 +513,8 @@ that scripts written in cortoscript work predictably across implementations.
 #### Case insensitive
 Firstly, cortoscript is case insensitive. The first reason for this decision is
 because it makes it easier to use as an extension of OMG-IDL, which is widely
-adopted in the industrial space.
+adopted in industrial IoT systems as the data modeling language for the OMG DDS
+standard.
 
 The second reason is that some file systems are case insensitive. As
 cortoscript will often be used as a front-end for code generation, type names
@@ -537,7 +557,7 @@ following example:
 void my_family {
     Person grandmother()
     void my_household {
-        Person father: mother:grandmother
+        Person father (mother: grandmother)
     }
 }
 ```
@@ -554,7 +574,7 @@ void my_family {
     Person grandmother()
     void my_household()
 }
-Person my_family/my_household/father: mother:my_family/grandmother
+Person my_family/my_household/father (mother: my_family/grandmother)
 ```
 
 Here, we need to use the identifier relative to the root for `grandmother`, as
@@ -645,7 +665,7 @@ This provides a summary of the order in which corto searches in various scopes
 for an identifier:
 
 ```
-type scope -> /corto/lang -> current + parent scopes -> /corto
+type scope -> /corto/lang -> current + parent of current -> /corto
 ```
 
 The `type scope` is only applicable when assigning a value. If an
@@ -657,23 +677,7 @@ again after the current- and parent scopes have been searched. Fully qualified
 identifier will always be immediately looked up from the root
 
 ## Cortoscript and JSON
-In some scenarios, both cortoscript and JSON can be used, like for example when
-creating configuration files or model files. In many situations, cortoscript
-will provide a more concise, easier to read alternative to using JSON as it can
-leverage the full semantics of the corto type system.
-
-The ubiquity of JSON, in combination with its self-describing nature however
-means there are also plenty of scenarios where JSON is a better choice. As a
-general guideline, cortoscript is preferred when the file is exclusively used
-within a corto context, for example, a file that defines the datamodel for a
-corto project.
-
-When the data needs to be shared across projects outside of the corto ecosystem,
-JSON is a better choice. An example is data that is sent to a web client
-or server.
-
-The following two examples show an example model definition and configuration
-in both cortoscript and JSON, for illustration:
+The following example shows the same data in both cortoscript and JSON:
 
 ### Model file
 In cortoscript:
@@ -723,12 +727,7 @@ In JSON:
 ```
 
 ## Cortoscript and OMG IDL
-OMG IDL is a description language for describing structured data, and is widely
-used in CORBA (Common Object Request Broker Architecture) and DDS (Data
-Distribution Service) based systems. IDL is superficially similar to cortoscript
-in that it offers a language-independent way of describing types.
-
-This simple example demonstrates some similarities between cortoscript and IDL:
+The following example shows the same data in both cortoscript and IDL:
 
 IDL:
 ```
@@ -745,38 +744,6 @@ struct Point {
     y: int32
 }
 ```
-
-IDL and cortoscript have different design goals. IDL is designed as a language
-to describe syntax of a connectivity framework, whereas cortoscript is designed
-to describe application layer datatypes and data, which are often hierarchical
-and incorporate a notion of semantics. These high-level differences result in a
-number of technical differences.
-
-The most significant difference is that while IDL allows for describing types,
-it cannot be used to describe data. In cortoscript, since there is no meaningful
-distinction between types and data, you can describe both datamodels and
-the objects that instantiate them.
-
-Secondly, whereas cortoscript adapts itself to the underlying typesystem, IDL is
-more rigid. You can look at an IDL grammar definition and see that it has
-structs, collection types, and so on. In cortoscript, these constructs are
-defined in the type system. The cortoscript language contains no built-in
-notion of which kinds of constructs are supported.
-
-Newer version of IDL support annotations, which allows for adding new features
-to the language without changing the grammar. These annotations however still
-annotate existing constructs. Cortoscript allows introducing new constructs by
-extending the type system, which is something that can be done without
-changing the corto runtime.
-
-Thirdly, cortoscript is capable of annotating types and values with their
-respective units. This enables model and datadefinitions to be written in a way
-that guarantees unit consistency when a value is assigned.
-
-Cortoscript is designed to work well with languages like IDL, and in many cases
-can be considered a superset of IDL. Where IDL describes syntax, cortoscript
-describes syntax, semantics and data. A connectivity layer that uses IDL, like
-OMG-DDS, can therefore be naturally extended with semantics using cortoscript.
 
 ## Code examples
 The following section shows various examples of cortoscript.
