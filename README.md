@@ -487,7 +487,7 @@ int32 b: 10
 
 Similarly, a user may want to compare two objects of a reference type by value. For this, the unary value operator (`*`) can be used:
 
-```
+```c++
 class Point {
     x, y: int32
 }
