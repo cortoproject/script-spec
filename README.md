@@ -1,23 +1,118 @@
 # cortoscript specification
-Cortoscript is the language that is used by the corto framework to describe
-models and data that instantiates models. Typical usecases for cortoscript are:
-- data model definitions
-- API definitions
-- configuration data
-- expression parsing
+Cortoscript is a new data definition language designed specifically for modeling objects and datamodels that describe the real-world. It differs from other definition languages like XML and JSON in that it:
 
-The purpose of cortoscript is to provide a concise and readable format for describing corto objects and models.
+- is strongly typed
+- supports units, ranges and semantics
+- supports hierarchies of objects
+- supports directed object graphs
+- supports inheritance and polymorphism
+- supports expressions
 
-This repository contains a cortoscript parser with a formal definition of the grammar: https://github.com/cortoproject/script-parser
+This combination of features makes cortoscript a good fit for Internet of Things systems, as these benefit from well-defined interfaces, and interoperability at the semantics level.
+
+While cortoscript is the native definition language for the corto framework (https://corto.io), the language itself does not depend on corto. It makes little assumptions about the underlying type system, which allows it to be easily ported to other frameworks.
+
+The language does not contain a syntax for describing models, though if the underlying type system is self-describing (meaning types can be treated as 'regular' data), the language is capable of creating both models and data. The language syntax has been optimized to make this look and feel natural.
+
+This is a small example of a type and an object of that type in cortoscript, using the corto type system:
+
+```
+class Drone {
+    lat: float64, tags:[latitude]
+    long: float64, tags:[longitude]
+    alt: float64, unit:feet, tags:[altitude]
+}
+
+Drone my_drone (
+    lat: 37.7749,
+    long: 122.4194,
+    alt: 250ft)
+```
+
+This repository contains an up to date parser based on an ANTLR4 grammar:
+https://github.com/cortoproject/script-parser
+
+This project transforms the ANTLR datastructures into an AST:
+https://github.com/cortoproject/script-ast
+
+This project parses the AST and creates corto objects (in development):
+https://github.com/cortoproject/script-declare
+
+## History
+Development of cortoscript started in 2012 as part of a project called Fractal. Fractal was a little hobby project intended to make it easier to write games that rely on multiple technology stacks, like Qt, Sigar and OpenSplice DDS.
+
+Fractal featured a strongly typed scripting language, which at the time was built because it seemed like a fun thing to do. This scripting language eventually morphed into cortoscript, and fractal evolved into corto (https://corto.io).
+
+The syntax of the fractal scripting language was quite different from cortoscript, though it already featured strong typing, a self-describing type system and support for object hierarchies. Hierarchies got special attention, as DDS, Qt and game engines all featured hierarchical designs that needed to be wrapped somehow in the fractal framework.
+
+This is an example from 2012 of fractal script. The language used indentation and a scope operator ("::") to indicate object hierarchies:
+
+```
+struct Point = {{
+  {"x", uint32},
+  {"y", uint32}
+}} ::
+  void add(Point p):
+    this.x += p.x;
+    this.y += p.y
+
+Point p = {x=10, y=20} ::
+  Point q = {10, 20}
+
+p.add(p::q)
+```
+
+After a series of name changes because of  confusion with other products ("hyve"), unavailability of domain name ("fractal", "lyra") or trademark conflicts ("cortex"), the project eventually settled on the name corto and went open source in November 2014.
+
+The language also went through a number of iterations. The focus shifted from being a scripting language to a data and model definition language. Features were added to make defining models more intuitive, and organize models in separate packages. The C++ scope identifier ("::") was replaced with the forward slash ("/"). This is an example of a model definition in the corto language:
+
+```
+in package my_package
+
+struct Point:/
+  x, y: int32
+
+Point x {x=10, y=20}
+```
+
+This latest iteration of the language was used in a lot of corto-related projects, and is still in use today (https://github.com/cortoproject/corto-language). While this version worked reasonably well for defining simple models, it had the disadvantage that for complex model- or data definitions, the indentation made scripts difficult to read.
+
+This implementation had several other problems. Like its predecessors it was implemented using lex/yacc which made it fast and gave it a low footprint, but restricted expressiveness of the parser, and made for some very ugly parser code. Additionally, the generated parser did not clean up its state after parsing code, which made it unsuitable for REPL usecases. By 2017, efforts were already underway to rewrite the parser in ANTLR3, but because of shifting priorities this work got stalled many times.
+
+In February 2018, after some particularly bad examples of how obfuscated the indented code could get, the decision was made to overhaul not just the parser, but also the language, and work on cortoscript began. The project picked up speed as the release of the ANTLR4 C++ runtime in 2017 made it possible to switch to ANTLR4, which was another step up in productivity from ANTLR3.
+
+An example of the old corto syntax for a complex type:
+
+```
+class register {
+    base = member,     
+    options = {
+        parentType = template,
+        parentState = DECLARED
+    }
+} :/
+    member address: uint16
+    member sample_frequency: uint16
+```
+
+In March 2018 the new language was given the name cortoscript. It was decided to design the language in a way that it would be framework independent so it could be used without corto, and to include a number of features from scratch that would make it more applicable to IoT usecases, like annotating values with their respective units. Significant whitespace (indentation) was dropped, and a new syntax was adopted that resembled functions in C/C++, to give the language a familiar look:
+
+```
+Type identifier (value1, value2) {
+    // children
+}
+```
+
+The first corto-based cortoscript parser is still in development. A list of relevant repositories is included in the introduction of the README. If you would like to get involved in cortoscript development, send a message in the message box on the corto website (https://corto.io), or send an email to sander@corto.io.
 
 ## Design principles
 Cortoscript must be declarative. It must provide syntax to instantiate any kind of data that is allowed by the underlying type system without having to rely in imperative statements, including creating cyclic graphs.
 
-Cortoscript must be usable independently from corto. The language must not contain anything that is specific to the corto typesystem or runtime.
+Cortoscript must be usable independently from corto. The language must not contain anything that is specific to the corto type system or runtime.
 
 Cortoscript must be strongly typed, yet must not have a DSL for defining types. Types must be defined like ordinary objects, which requires that the underlying type system is self-describing.
 
-Cortoscript must be concise and easy to read. It must take advantage of the underlying typesystem to provide a syntax which is less verbose and contains less clutter than alternatives.
+Cortoscript must be concise and easy to read. It must take advantage of the underlying type system to provide a syntax which is less verbose and contains less clutter than alternatives.
 
 Cortoscript must be DRY (don't repeat yourself) by introducing syntax
 constructs that allow scripts to avoid repetition.
